@@ -1,0 +1,13 @@
+{
+  "generic": "Si è verificato un errore",
+  "network": "Errore di rete, verifica la connessione",
+  "auth": "Errore di autenticazione",
+  "permissionDenied": "Accesso negato",
+  "notFound": "Risorsa non trovata",
+  "uploadFailed": "Caricamento file fallito",
+  "weatherFailed": "Impossibile recuperare i dati meteo",
+  "locationDenied": "Permesso di geolocalizzazione negato",
+  "invalidFile": "Formato file non supportato. Usa JPEG o PNG",
+  "fileTooLarge": "File troppo grande. Massimo 5MB",
+  "tooManyPhotos": "Puoi caricare al massimo 3 foto per cattura"
+}

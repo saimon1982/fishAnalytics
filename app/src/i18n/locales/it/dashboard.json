@@ -1,0 +1,19 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Le tue statistiche di pesca",
+  "totalCatches": "Catture totali",
+  "bySpecies": "Catture per specie",
+  "trendOverTime": "Andamento nel tempo",
+  "topBaits": "Esche più efficaci",
+  "topTechniques": "Tecniche più efficaci",
+  "weatherCorrelation": "Correlazione meteo / fase lunare",
+  "noDataForPeriod": "Nessun dato per il periodo selezionato",
+  "periodDay": "Giorno",
+  "periodWeek": "Settimana",
+  "periodMonth": "Mese",
+  "periodYear": "Anno",
+  "from": "Dal",
+  "to": "Al",
+  "catches": "catture",
+  "incomplete": "catture con meteo incompleto"
+}

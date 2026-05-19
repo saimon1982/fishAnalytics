@@ -1,0 +1,13 @@
+{
+  "generic": "An error occurred",
+  "network": "Network error, please check your connection",
+  "auth": "Authentication error",
+  "permissionDenied": "Access denied",
+  "notFound": "Resource not found",
+  "uploadFailed": "File upload failed",
+  "weatherFailed": "Unable to fetch weather data",
+  "locationDenied": "Geolocation permission denied",
+  "invalidFile": "Unsupported file format. Use JPEG or PNG",
+  "fileTooLarge": "File too large. Maximum 5MB",
+  "tooManyPhotos": "You can upload a maximum of 3 photos per catch"
+}

@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function validCatch() {
+      let data = request.resource.data;
+      return data.species is string && data.species.size() > 0
+        && data.location.lat is number && data.location.lat >= -90 && data.location.lat <= 90
+        && data.location.lng is number && data.location.lng >= -180 && data.location.lng <= 180
+        && data.catchAt is timestamp
+        && (!('photos' in data) || data.photos.size() <= 3);
+    }
+
+    // Whitelist: readable by any authenticated user (needed during login check),
+    // writable only by admin (manage via Firebase Console or Admin SDK).
+    match /whitelist/{email} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // User profiles
+    match /users/{uid} {
+      allow read, write: if isAuthenticated() && isOwner(uid);
+
+      match /catches/{catchId} {
+        allow read: if isAuthenticated() && isOwner(uid);
+        allow create: if isAuthenticated() && isOwner(uid) && validCatch();
+        allow update: if isAuthenticated() && isOwner(uid) && validCatch();
+        allow delete: if isAuthenticated() && isOwner(uid);
+      }
+
+      match /shares/{shareId} {
+        allow read, write: if isAuthenticated() && isOwner(uid);
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

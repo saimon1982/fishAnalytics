@@ -1,0 +1,19 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Your fishing statistics",
+  "totalCatches": "Total catches",
+  "bySpecies": "Catches by species",
+  "trendOverTime": "Trend over time",
+  "topBaits": "Most effective baits",
+  "topTechniques": "Most effective techniques",
+  "weatherCorrelation": "Weather / moon phase correlation",
+  "noDataForPeriod": "No data for the selected period",
+  "periodDay": "Day",
+  "periodWeek": "Week",
+  "periodMonth": "Month",
+  "periodYear": "Year",
+  "from": "From",
+  "to": "To",
+  "catches": "catches",
+  "incomplete": "catches with incomplete weather"
+}
