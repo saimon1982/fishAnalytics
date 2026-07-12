@@ -1,0 +1,123 @@
+version: '3'
+
+vars:
+  APP_DIR: app
+  GOOGLE_APPLICATION_CREDENTIALS_FILE: ../.config/fishanalytics-a65be-5a567dec1d45.json
+  DEFAULT_FIREBASE_PROJECT_ID:
+    sh: |
+      if [ -f app/.env ]; then
+        sed -n 's/^VITE_FIREBASE_PROJECT_ID=//p' app/.env | tail -n 1 | tr -d '"' | tr -d "'"
+      fi
+
+tasks:
+  default:
+    desc: Elenca i task disponibili
+    cmds:
+      - task --list
+
+  install:
+    desc: Installa le dipendenze npm
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - npm install
+
+  run:
+    desc: Avvia l'app in sviluppo
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - npm run dev -- --host 0.0.0.0
+
+  build:
+    desc: Compila TypeScript e genera la build Vite
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - npm run build
+
+  preview:
+    desc: Serve localmente la build di produzione
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - npm run preview -- --host 0.0.0.0
+
+  test:
+    desc: Esegue i test
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - npm run test
+
+  lint:
+    desc: Esegue ESLint
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - npm run lint
+
+  firebase:login:
+    desc: Login alla Firebase CLI
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - npx firebase login
+
+  deploy:
+    desc: Build e deploy su Firebase
+    deps:
+      - build
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - |
+        PROJECT_ID="{{.PROJECT_ID | default .DEFAULT_FIREBASE_PROJECT_ID}}"
+        if [ -z "$PROJECT_ID" ]; then
+          echo "Imposta PROJECT_ID=<firebase-project-id> oppure VITE_FIREBASE_PROJECT_ID in app/.env"
+          exit 1
+        fi
+        npx firebase deploy --project "$PROJECT_ID"
+
+  db:deploy-rules:
+    desc: Deploy di regole Firestore, indici e Storage
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - |
+        PROJECT_ID="{{.PROJECT_ID | default .DEFAULT_FIREBASE_PROJECT_ID}}"
+        if [ -z "$PROJECT_ID" ]; then
+          echo "Imposta PROJECT_ID=<firebase-project-id> oppure VITE_FIREBASE_PROJECT_ID in app/.env"
+          exit 1
+        fi
+        npx firebase deploy --only firestore:rules,firestore:indexes,storage --project "$PROJECT_ID"
+
+  db:init:
+    desc: Inizializza Firestore e opzionalmente popola la whitelist con EMAILS=a@b.it,c@d.it
+    dir: '{{.APP_DIR}}'
+    cmds:
+      - |
+        PROJECT_ID="{{.PROJECT_ID | default .DEFAULT_FIREBASE_PROJECT_ID}}"
+        if [ -z "$PROJECT_ID" ]; then
+          echo "Imposta PROJECT_ID=<firebase-project-id> oppure VITE_FIREBASE_PROJECT_ID in app/.env"
+          exit 1
+        fi
+        npx firebase deploy --only firestore:rules,firestore:indexes,storage --project "$PROJECT_ID"
+        FIREBASE_PROJECT_ID="$PROJECT_ID" EMAILS="{{.EMAILS}}" npm run admin:init-db
+
+  db:create-user:
+    desc: Aggiunge una email alla whitelist e, se passi AUTH_UID, crea anche users/{uid}
+    dir: '{{.APP_DIR}}'
+    requires:
+      vars:
+        - EMAIL
+    cmds:
+      - |
+        PROJECT_ID="{{.PROJECT_ID | default .DEFAULT_FIREBASE_PROJECT_ID}}"
+        if [ -z "$PROJECT_ID" ]; then
+          echo "Imposta PROJECT_ID=<firebase-project-id> oppure VITE_FIREBASE_PROJECT_ID in app/.env"
+          exit 1
+        fi
+        export GOOGLE_APPLICATION_CREDENTIALS="{{.GOOGLE_APPLICATION_CREDENTIALS | default .GOOGLE_APPLICATION_CREDENTIALS_FILE}}"
+        if [ ! -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+          echo "Service account non trovato: $GOOGLE_APPLICATION_CREDENTIALS"
+          exit 1
+        fi
+        FIREBASE_PROJECT_ID="$PROJECT_ID" \
+          EMAIL="{{.EMAIL}}" \
+          AUTH_UID="{{.AUTH_UID}}" \
+          DISPLAY_NAME="{{.DISPLAY_NAME}}" \
+          LANGUAGE="{{.LANGUAGE | default "it"}}" \
+          PHOTO_URL="{{.PHOTO_URL}}" \
+          npm run admin:create-user

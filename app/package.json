@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "admin:init-db": "node scripts/admin/firestore-admin.mjs init-db",
+    "admin:create-user": "node scripts/admin/firestore-admin.mjs create-user"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -45,6 +47,7 @@
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "firebase-admin": "^14.1.0",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "typescript": "~6.0.2",
