@@ -11,6 +11,7 @@ import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '@/config/firebase'
 import { useAuthStore } from '../store/authStore'
 import type { UserProfile } from '@/types/domain'
+import i18n from '@/i18n'
 
 const provider = new GoogleAuthProvider()
 provider.setCustomParameters({ prompt: 'select_account' })
@@ -20,14 +21,14 @@ let authStateSubscribers = 0
 let loginPopupPromise: Promise<void> | null = null
 
 function persistAuthError(code: string) {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(AUTH_ERROR_STORAGE_KEY, code)
+  if (globalThis.window !== undefined) {
+    globalThis.localStorage.setItem(AUTH_ERROR_STORAGE_KEY, code)
   }
 }
 
 function clearPersistedAuthError() {
-  if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(AUTH_ERROR_STORAGE_KEY)
+  if (globalThis.window !== undefined) {
+    globalThis.localStorage.removeItem(AUTH_ERROR_STORAGE_KEY)
   }
 }
 
@@ -109,6 +110,7 @@ function ensureAuthStateListener() {
 
         const profile = await loadOrCreateUserProfile(firebaseUser)
         setUser(profile)
+        await i18n.changeLanguage(profile.language)
       } else {
         setUser(null)
       }
@@ -120,7 +122,7 @@ function ensureAuthStateListener() {
         setUser(null)
         await signOut(auth)
       } else if (firebaseUser) {
-        setUser({
+        const fallbackUser: UserProfile = {
           uid: firebaseUser.uid,
           displayName: firebaseUser.displayName ?? '',
           email: firebaseUser.email ?? '',
@@ -128,7 +130,9 @@ function ensureAuthStateListener() {
           language: 'it',
           createdAt: new Date(),
           updatedAt: new Date(),
-        })
+        }
+        setUser(fallbackUser)
+        await i18n.changeLanguage(fallbackUser.language)
       } else {
         setUser(null)
       }

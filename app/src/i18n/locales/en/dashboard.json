@@ -12,6 +12,8 @@
   "periodWeek": "Week",
   "periodMonth": "Month",
   "periodYear": "Year",
+  "speciesFilter": "Filter by species",
+  "allSpecies": "All species",
   "from": "From",
   "to": "To",
   "catches": "catches",

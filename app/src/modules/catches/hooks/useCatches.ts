@@ -38,12 +38,14 @@ export function useUpdateCatch(uid: string) {
       data,
       newPhotoFiles,
       existingPhotos,
+      weatherOverrides,
     }: {
       catchId: string
       data: Partial<CatchFormData>
       newPhotoFiles?: File[]
       existingPhotos?: import('@/types/domain').PhotoRef[]
-    }) => updateCatch(uid, catchId, data, newPhotoFiles, existingPhotos),
+      weatherOverrides?: Partial<import('@/types/domain').WeatherSnapshot>
+    }) => updateCatch(uid, catchId, data, newPhotoFiles, existingPhotos, weatherOverrides),
     onSuccess: () => qc.invalidateQueries({ queryKey: [CATCHES_KEY, uid] }),
   })
 }

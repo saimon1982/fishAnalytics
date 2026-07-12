@@ -4,11 +4,17 @@ import {
   AppBar, Avatar, Box, Drawer, IconButton, List, ListItemButton,
   ListItemIcon, ListItemText, Menu, MenuItem, BottomNavigation,
   BottomNavigationAction, Toolbar, Typography, useMediaQuery, useTheme, Divider,
+  TextField,
 } from '@mui/material'
 import { Dashboard, Search, Menu as MenuIcon, Settings } from '@mui/icons-material'
 import SetMeal from '@mui/icons-material/SetMeal'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/modules/auth/hooks/useAuth'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '@/config/firebase'
+import i18n from '@/i18n'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+import type { AppLanguage } from '@/types/domain'
 
 const DRAWER_WIDTH = 240
 
@@ -20,7 +26,7 @@ const navItems = [
 ]
 
 interface Props {
-  children: React.ReactNode
+  readonly children: React.ReactNode
 }
 
 export function AppLayout({ children }: Props) {
@@ -34,6 +40,23 @@ export function AppLayout({ children }: Props) {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null)
+  const [isSavingLanguage, setIsSavingLanguage] = useState(false)
+  const setUser = useAuthStore((state) => state.setUser)
+
+  const handleLanguageChange = async (language: AppLanguage) => {
+    if (!user || language === user.language) {
+      return
+    }
+
+    setIsSavingLanguage(true)
+    try {
+      await updateDoc(doc(db, 'users', user.uid), { language })
+      setUser({ ...user, language })
+      await i18n.changeLanguage(language)
+    } finally {
+      setIsSavingLanguage(false)
+    }
+  }
 
   const getLabel = (key: string) => {
     if (key === 'dashboard') return td('title')
@@ -77,6 +100,27 @@ export function AppLayout({ children }: Props) {
           <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
             {!isMobile && '🎣 '}Fish Analytics
           </Typography>
+          <TextField
+            select
+            size="small"
+            value={user?.language ?? 'it'}
+            onChange={(event) => handleLanguageChange(event.target.value as AppLanguage)}
+            disabled={!user || isSavingLanguage}
+            sx={{
+              mr: 1,
+              minWidth: 96,
+              '& .MuiOutlinedInput-root': {
+                color: 'common.white',
+                '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+                '&:hover fieldset': { borderColor: 'common.white' },
+                '&.Mui-focused fieldset': { borderColor: 'common.white' },
+              },
+              '& .MuiSvgIcon-root': { color: 'common.white' },
+            }}
+          >
+            <MenuItem value="it">IT</MenuItem>
+            <MenuItem value="en">EN</MenuItem>
+          </TextField>
           <IconButton onClick={(e) => setProfileAnchor(e.currentTarget)}>
             <Avatar src={user?.photoURL ?? undefined} sx={{ width: 32, height: 32 }}>
               {user?.displayName?.[0]}

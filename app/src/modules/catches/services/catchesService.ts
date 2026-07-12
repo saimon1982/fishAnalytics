@@ -161,6 +161,7 @@ export async function updateCatch(
   data: Partial<CatchFormData>,
   newPhotoFiles?: File[],
   existingPhotos?: PhotoRef[],
+  weatherOverrides?: Partial<WeatherSnapshot>,
 ): Promise<void> {
   const updates: Record<string, unknown> = {
     ...data,
@@ -168,6 +169,11 @@ export async function updateCatch(
   }
   if (data.catchAt) {
     updates['catchAt'] = Timestamp.fromDate(data.catchAt)
+  }
+  if (weatherOverrides) {
+    for (const [k, v] of Object.entries(weatherOverrides)) {
+      updates[`weather.${k}`] = v
+    }
   }
   if (newPhotoFiles && newPhotoFiles.length > 0) {
     const existing = existingPhotos ?? []

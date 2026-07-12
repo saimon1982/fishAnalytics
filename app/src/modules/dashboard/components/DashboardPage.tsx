@@ -5,14 +5,14 @@ import {
 } from '@mui/material'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell,
+  Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie,
 } from 'recharts'
 import { useTranslation } from 'react-i18next'
 import { useCatches } from '@/modules/catches/hooks/useCatches'
 
 const COLORS = ['#1565C0', '#00897B', '#F57F17', '#AD1457', '#6A1B9A', '#1976D2', '#388E3C']
 
-interface Props { uid: string }
+interface Props { readonly uid: string }
 
 type Period = 'day' | 'week' | 'month' | 'year'
 
@@ -35,11 +35,14 @@ export function DashboardPage({ uid }: Props) {
   const { t } = useTranslation('dashboard')
   const { data: catches, isLoading } = useCatches(uid)
   const [period, setPeriod] = useState<Period>('month')
+  const [selectedSpecies, setSelectedSpecies] = useState('all')
 
   const speciesData = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const c of catches ?? []) counts[c.species] = (counts[c.species] ?? 0) + 1
-    return Object.entries(counts).map(([species, count]) => ({ species, count })).sort((a, b) => b.count - a.count)
+    return Object.entries(counts)
+      .map(([species, count], index) => ({ species, count, fill: COLORS[index % COLORS.length] }))
+      .sort((a, b) => b.count - a.count)
   }, [catches])
 
   const trendData = useMemo(() => {
@@ -50,14 +53,24 @@ export function DashboardPage({ uid }: Props) {
 
   const baitData = useMemo(() => {
     const counts: Record<string, number> = {}
-    for (const c of catches ?? []) if (c.bait) counts[c.bait] = (counts[c.bait] ?? 0) + 1
+    for (const c of catches ?? []) {
+      if (selectedSpecies !== 'all' && c.species !== selectedSpecies) continue
+      if (c.bait) counts[c.bait] = (counts[c.bait] ?? 0) + 1
+    }
     return Object.entries(counts).map(([bait, count]) => ({ bait, count })).sort((a, b) => b.count - a.count).slice(0, 10)
-  }, [catches])
+  }, [catches, selectedSpecies])
 
   const techniqueData = useMemo(() => {
     const counts: Record<string, number> = {}
-    for (const c of catches ?? []) if (c.technique) counts[c.technique] = (counts[c.technique] ?? 0) + 1
+    for (const c of catches ?? []) {
+      if (selectedSpecies !== 'all' && c.species !== selectedSpecies) continue
+      if (c.technique) counts[c.technique] = (counts[c.technique] ?? 0) + 1
+    }
     return Object.entries(counts).map(([technique, count]) => ({ technique, count })).sort((a, b) => b.count - a.count).slice(0, 10)
+  }, [catches, selectedSpecies])
+
+  const availableSpecies = useMemo(() => {
+    return [...new Set((catches ?? []).map((catchItem) => catchItem.species))].sort((a, b) => a.localeCompare(b))
   }, [catches])
 
   const moonCorrelation = useMemo(() => {
@@ -65,7 +78,9 @@ export function DashboardPage({ uid }: Props) {
     for (const c of catches ?? []) {
       if (c.weather.moonPhase) counts[c.weather.moonPhase] = (counts[c.weather.moonPhase] ?? 0) + 1
     }
-    return Object.entries(counts).map(([phase, count]) => ({ phase, count })).sort((a, b) => b.count - a.count)
+    return Object.entries(counts)
+      .map(([phase, count], index) => ({ phase, count, fill: COLORS[index % COLORS.length] }))
+      .sort((a, b) => b.count - a.count)
   }, [catches])
 
   if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>
@@ -116,9 +131,7 @@ export function DashboardPage({ uid }: Props) {
                 : (
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
-                      <Pie data={speciesData} dataKey="count" nameKey="species" cx="50%" cy="50%" outerRadius={100} label>
-                        {speciesData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                      </Pie>
+                      <Pie data={speciesData} dataKey="count" nameKey="species" cx="50%" cy="50%" outerRadius={100} label />
                       <Tooltip />
                       <Legend />
                     </PieChart>
@@ -157,6 +170,24 @@ export function DashboardPage({ uid }: Props) {
           </Card>
         </Grid>
 
+        <Grid size={12}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <TextField
+              select
+              label={t('speciesFilter')}
+              value={selectedSpecies}
+              onChange={(event) => setSelectedSpecies(event.target.value)}
+              size="small"
+              sx={{ minWidth: { xs: '100%', sm: 260 } }}
+            >
+              <MenuItem value="all">{t('allSpecies')}</MenuItem>
+              {availableSpecies.map((species) => (
+                <MenuItem key={species} value={species}>{species}</MenuItem>
+              ))}
+            </TextField>
+          </Box>
+        </Grid>
+
         <Grid size={{ xs: 12, md: 6 }}>
           <Card>
             <CardContent>
@@ -191,9 +222,7 @@ export function DashboardPage({ uid }: Props) {
                       <XAxis dataKey="phase" tick={{ fontSize: 10 }} />
                       <YAxis allowDecimals={false} />
                       <Tooltip />
-                      <Bar dataKey="count" name={t('catches')}>
-                        {moonCorrelation.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                      </Bar>
+                      <Bar dataKey="count" name={t('catches')} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}

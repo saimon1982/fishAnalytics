@@ -18,6 +18,7 @@
   "logout": "Logout",
   "profile": "Profile",
   "required": "Required field",
+  "invalid": "Invalid value",
   "optional": "Optional",
   "date": "Date",
   "time": "Time",

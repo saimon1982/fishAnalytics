@@ -18,6 +18,7 @@
   "logout": "Esci",
   "profile": "Profilo",
   "required": "Campo obbligatorio",
+  "invalid": "Valore non valido",
   "optional": "Facoltativo",
   "date": "Data",
   "time": "Ora",

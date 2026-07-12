@@ -8,7 +8,8 @@ import {
 import { MyLocation, AddPhotoAlternate, Close } from '@mui/icons-material'
 import { useTranslation } from 'react-i18next'
 import { catchFormSchema, type CatchFormValues } from '../store/catchFormSchema'
-import type { CatchRecord } from '@/types/domain'
+import type { CatchRecord, WeatherSnapshot } from '@/types/domain'
+import { fetchWeather } from '@/modules/weather/services/weatherService'
 
 interface Props {
   defaultValues?: Partial<CatchFormValues>
@@ -18,7 +19,7 @@ interface Props {
   loading?: boolean
 }
 
-export function CatchForm({ defaultValues, onSubmit, onCancel, loading }: Props) {
+export function CatchForm({ defaultValues, catchRecord, onSubmit, onCancel, loading }: Props) {
   const { t } = useTranslation('catches')
   const { t: tc } = useTranslation('common')
   const { t: te } = useTranslation('errors')
@@ -26,8 +27,10 @@ export function CatchForm({ defaultValues, onSubmit, onCancel, loading }: Props)
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
   const [geoLoading, setGeoLoading] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
+  const [weather, setWeather] = useState<WeatherSnapshot | null>(catchRecord?.weather ?? null)
+  const [weatherLoading, setWeatherLoading] = useState(false)
 
-  const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<CatchFormValues>({
+  const { register, handleSubmit, control, setValue, getValues, formState: { errors } } = useForm<CatchFormValues>({
     resolver: zodResolver(catchFormSchema) as Resolver<CatchFormValues>,
     defaultValues: {
       species: '',
@@ -41,6 +44,8 @@ export function CatchForm({ defaultValues, onSubmit, onCancel, loading }: Props)
       depthM: null,
       waterTempC: null,
       waterType: null,
+      moonPhase: null,
+      windSpeedKmh: null,
       ...defaultValues,
     },
   })
@@ -49,10 +54,17 @@ export function CatchForm({ defaultValues, onSubmit, onCancel, loading }: Props)
     if (!navigator.geolocation) return
     setGeoLoading(true)
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setValue('location.lat', pos.coords.latitude)
-        setValue('location.lng', pos.coords.longitude)
+      async (pos) => {
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        setValue('location.lat', lat)
+        setValue('location.lng', lng)
         setGeoLoading(false)
+        setWeatherLoading(true)
+        const catchAt = getValues('catchAt')
+        const snapshot = await fetchWeather(lat, lng, catchAt)
+        setWeather(snapshot)
+        setWeatherLoading(false)
       },
       () => setGeoLoading(false),
     )
@@ -96,10 +108,26 @@ export function CatchForm({ defaultValues, onSubmit, onCancel, loading }: Props)
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField {...register('sizeCm')} label={t('size')} fullWidth type="number" slotProps={{ htmlInput: { step: 0.1 } }} />
+          <TextField
+            {...register('sizeCm')}
+            label={t('size')}
+            fullWidth
+            type="number"
+            slotProps={{ htmlInput: { step: 0.1 } }}
+            error={!!errors.sizeCm}
+            helperText={errors.sizeCm ? tc('invalid') : undefined}
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField {...register('weightKg')} label={t('weight')} fullWidth type="number" slotProps={{ htmlInput: { step: 0.01 } }} />
+          <TextField
+            {...register('weightKg')}
+            label={t('weight')}
+            fullWidth
+            type="number"
+            slotProps={{ htmlInput: { step: 0.01 } }}
+            error={!!errors.weightKg}
+            helperText={errors.weightKg ? tc('invalid') : undefined}
+          />
         </Grid>
 
         <Grid size={12}>
@@ -115,6 +143,7 @@ export function CatchForm({ defaultValues, onSubmit, onCancel, loading }: Props)
                 value={field.value ? new Date(field.value.getTime() - field.value.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
                 onChange={(e) => field.onChange(new Date(e.target.value))}
                 error={!!errors.catchAt}
+                helperText={errors.catchAt ? tc('required') : undefined}
                 slotProps={{ inputLabel: { shrink: true } }}
               />
             )}
@@ -130,6 +159,7 @@ export function CatchForm({ defaultValues, onSubmit, onCancel, loading }: Props)
             type="number"
             slotProps={{ htmlInput: { step: 0.000001 } }}
             error={!!errors.location?.lat}
+            helperText={errors.location?.lat ? tc('required') : undefined}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 5 }}>
@@ -141,6 +171,7 @@ export function CatchForm({ defaultValues, onSubmit, onCancel, loading }: Props)
             type="number"
             slotProps={{ htmlInput: { step: 0.000001 } }}
             error={!!errors.location?.lng}
+            helperText={errors.location?.lng ? tc('required') : undefined}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 2 }} sx={{ display: 'flex', alignItems: 'center' }}>
@@ -219,7 +250,39 @@ export function CatchForm({ defaultValues, onSubmit, onCancel, loading }: Props)
         </Grid>
 
         <Grid size={12}>
-          <Chip label={t('weatherFetching')} color="info" size="small" variant="outlined" />
+          {weatherLoading && (
+            <Chip label={t('weatherFetching')} color="info" size="small" variant="outlined" icon={<CircularProgress size={12} />} />
+          )}
+          {!weatherLoading && weather?.status === 'complete' && (
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }} useFlexGap>
+              {weather.moonPhase && <Chip label={weather.moonPhase} color="info" size="small" variant="outlined" />}
+              {weather.windSpeedKmh != null && <Chip label={`${t('windSpeed')}: ${weather.windSpeedKmh} km/h`} color="info" size="small" variant="outlined" />}
+              {weather.pressureHpa != null && <Chip label={`${t('pressure')}: ${weather.pressureHpa} hPa`} color="info" size="small" variant="outlined" />}
+            </Stack>
+          )}
+          {!weatherLoading && weather?.status === 'incomplete' && (
+            <Chip label={t('weatherIncomplete')} color="warning" size="small" variant="outlined" />
+          )}
+          {catchRecord && (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  {...register('moonPhase')}
+                  label={t('moonPhase')}
+                  fullWidth
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  {...register('windSpeedKmh')}
+                  label={t('windSpeed')}
+                  fullWidth
+                  type="number"
+                  slotProps={{ htmlInput: { step: 0.1 } }}
+                />
+              </Grid>
+            </Grid>
+          )}
         </Grid>
       </Grid>
 

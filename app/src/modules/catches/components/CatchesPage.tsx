@@ -41,6 +41,8 @@ export function CatchesPage({ uid }: Props) {
         depthM: editTarget.depthM,
         waterTempC: editTarget.waterTempC,
         waterType: editTarget.waterType,
+        moonPhase: editTarget.weather?.moonPhase ?? null,
+        windSpeedKmh: editTarget.weather?.windSpeedKmh ?? null,
       }
     : undefined
 
@@ -51,11 +53,14 @@ export function CatchesPage({ uid }: Props) {
 
   const handleUpdate = async (data: CatchFormValues, newPhotoFiles: File[]) => {
     if (!editTarget) return
+    const { moonPhase, windSpeedKmh, ...catchData } = data
+    const weatherOverrides = { moonPhase: moonPhase ?? null, windSpeedKmh: windSpeedKmh ?? null }
     await updateMutation.mutateAsync({
       catchId: editTarget.id,
-      data: data as Partial<CatchFormData>,
+      data: catchData as Partial<CatchFormData>,
       newPhotoFiles,
       existingPhotos: editTarget.photos,
+      weatherOverrides,
     })
     setEditTarget(null)
     setDialogOpen(false)

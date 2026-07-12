@@ -12,6 +12,8 @@
   "periodWeek": "Settimana",
   "periodMonth": "Mese",
   "periodYear": "Anno",
+  "speciesFilter": "Filtra per specie",
+  "allSpecies": "Tutte le specie",
   "from": "Dal",
   "to": "Al",
   "catches": "catture",
